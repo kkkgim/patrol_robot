@@ -1,0 +1,41 @@
+[0.010s] Invoking command in '/root/patrol_robot/build/aws_robomaker_small_warehouse_world': /usr/bin/cmake /root/patrol_robot/src/aws-robomaker-small-warehouse-world -DCATKIN_INSTALL_INTO_PREFIX_ROOT=0 -DCMAKE_INSTALL_PREFIX=/root/patrol_robot/install/aws_robomaker_small_warehouse_world
+[0.026s] [0mCMake Deprecation Warning at CMakeLists.txt:1 (cmake_minimum_required):
+[0.026s]   Compatibility with CMake < 2.8.12 will be removed from a future version of
+[0.026s]   CMake.
+[0.026s] 
+[0.026s]   Update the VERSION argument <min> value or use a ...<max> suffix to tell
+[0.026s]   CMake that the project does not need compatibility with older versions.
+[0.026s] 
+[0.026s] [0m
+[0.129s] -- The C compiler identification is GNU 11.4.0
+[0.206s] -- The CXX compiler identification is GNU 11.4.0
+[0.218s] -- Detecting C compiler ABI info
+[0.295s] -- Detecting C compiler ABI info - done
+[0.302s] -- Check for working C compiler: /usr/bin/cc - skipped
+[0.304s] -- Detecting C compile features
+[0.304s] -- Detecting C compile features - done
+[0.310s] -- Detecting CXX compiler ABI info
+[0.392s] -- Detecting CXX compiler ABI info - done
+[0.398s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.398s] -- Detecting CXX compile features
+[0.399s] -- Detecting CXX compile features - done
+[0.412s] [31mCMake Error at CMakeLists.txt:4 (find_package):
+[0.412s]   By not providing "Findcatkin.cmake" in CMAKE_MODULE_PATH this project has
+[0.412s]   asked CMake to find a package configuration file provided by "catkin", but
+[0.412s]   CMake did not find one.
+[0.412s] 
+[0.412s]   Could not find a package configuration file provided by "catkin" with any
+[0.412s]   of the following names:
+[0.412s] 
+[0.412s]     catkinConfig.cmake
+[0.412s]     catkin-config.cmake
+[0.412s] 
+[0.412s]   Add the installation prefix of "catkin" to CMAKE_PREFIX_PATH or set
+[0.412s]   "catkin_DIR" to a directory containing one of the above files.  If "catkin"
+[0.412s]   provides a separate development package or SDK, be sure it has been
+[0.412s]   installed.
+[0.412s] 
+[0.412s] [0m
+[0.412s] -- Configuring incomplete, errors occurred!
+[0.413s] See also "/root/patrol_robot/build/aws_robomaker_small_warehouse_world/CMakeFiles/CMakeOutput.log".
+[0.415s] Invoked command in '/root/patrol_robot/build/aws_robomaker_small_warehouse_world' returned '1': /usr/bin/cmake /root/patrol_robot/src/aws-robomaker-small-warehouse-world -DCATKIN_INSTALL_INTO_PREFIX_ROOT=0 -DCMAKE_INSTALL_PREFIX=/root/patrol_robot/install/aws_robomaker_small_warehouse_world

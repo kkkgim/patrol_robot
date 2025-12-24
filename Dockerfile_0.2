@@ -1,0 +1,28 @@
+FROM osrf/ros:humble-desktop
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Gazebo + ROS bridge
+RUN apt update && apt install -y \
+    ros-humble-gazebo-ros-pkgs \
+    ros-humble-turtlebot3* \
+    gazebo \
+    mesa-utils \
+    && rm -rf /var/lib/apt/lists/*
+
+# TurtleBot3 모델
+ENV TURTLEBOT3_MODEL=burger
+
+# Gazebo plugin path
+export GAZEBO_MODEL_PATH=/usr/share/gazebo-11/models:/opt/ros/humble/share:/root/patrol_robot/src/aws-robomaker-small-warehouse-world/models
+ENV GAZEBO_PLUGIN_PATH=/opt/ros/humble/lib:/usr/lib/x86_64-linux-gnu/gazebo-11/plugins
+
+# Source ROS
+SHELL ["/bin/bash", "-c"]
+RUN echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
+
+WORKDIR /root
+RUN mkdir -p /root/patrol_robot/src
+WORKDIR /root/patrol_robot
+
+CMD ["bash"]

@@ -1,0 +1,51 @@
+[0.000000] (-) TimerEvent: {}
+[0.000478] (aws_robomaker_small_warehouse_world) JobQueued: {'identifier': 'aws_robomaker_small_warehouse_world', 'dependencies': OrderedDict()}
+[0.000571] (aws_robomaker_small_warehouse_world) JobStarted: {'identifier': 'aws_robomaker_small_warehouse_world'}
+[0.010014] (aws_robomaker_small_warehouse_world) JobProgress: {'identifier': 'aws_robomaker_small_warehouse_world', 'progress': 'cmake'}
+[0.010345] (aws_robomaker_small_warehouse_world) Command: {'cmd': ['/usr/bin/cmake', '/root/patrol_robot/src/aws-robomaker-small-warehouse-world', '-DCATKIN_INSTALL_INTO_PREFIX_ROOT=0', '-DCMAKE_INSTALL_PREFIX=/root/patrol_robot/install/aws_robomaker_small_warehouse_world'], 'cwd': '/root/patrol_robot/build/aws_robomaker_small_warehouse_world', 'env': OrderedDict([('HOSTNAME', 'taerin-ASUS-Vivobook-16-V3607VU-V3607VU'), ('GIT_ASKPASS', '/root/.vscode-server/bin/994fd12f8d3a5aa16f17d42c041e5809167e845a/extensions/git/dist/askpass.sh'), ('SHLVL', '2'), ('LD_LIBRARY_PATH', '/usr/lib/x86_64-linux-gnu/gazebo-11/plugins:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib'), ('BROWSER', '/root/.vscode-server/bin/994fd12f8d3a5aa16f17d42c041e5809167e845a/bin/helpers/browser.sh'), ('HOME', '/root'), ('OLDPWD', '/root/patrol_robot/src'), ('TERM_PROGRAM_VERSION', '1.107.1'), ('VSCODE_IPC_HOOK_CLI', '/tmp/vscode-ipc-bd4d0a6a-6065-45e8-a6aa-cb291166f616.sock'), ('ROS_PYTHON_VERSION', '3'), ('VSCODE_GIT_ASKPASS_MAIN', '/root/.vscode-server/bin/994fd12f8d3a5aa16f17d42c041e5809167e845a/extensions/git/dist/askpass-main.js'), ('VSCODE_GIT_ASKPASS_NODE', '/root/.vscode-server/bin/994fd12f8d3a5aa16f17d42c041e5809167e845a/node'), ('VSCODE_PYTHON_AUTOACTIVATE_GUARD', '1'), ('COLORTERM', 'truecolor'), ('REMOTE_CONTAINERS', 'true'), ('ROS_DISTRO', 'humble'), ('REMOTE_CONTAINERS_IPC', '/tmp/vscode-remote-containers-ipc-9a75e9c8-d3c8-4c85-bd82-5bdef237d1ab.sock'), ('_', '/usr/bin/colcon'), ('ROS_VERSION', '2'), ('NVIDIA_DRIVER_CAPABILITIES', 'graphics,utility,compute'), ('TERM', 'xterm-256color'), ('GAZEBO_MODEL_PATH', 'pwd/models'), ('ROS_LOCALHOST_ONLY', '0'), ('PATH', '/root/.vscode-server/bin/994fd12f8d3a5aa16f17d42c041e5809167e845a/bin/remote-cli:/opt/ros/humble/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'), ('REMOTE_CONTAINERS_SOCKETS', '["/tmp/vscode-ssh-auth-9a75e9c8-d3c8-4c85-bd82-5bdef237d1ab.sock","/root/.gnupg/S.gpg-agent"]'), ('DISPLAY', ':1'), ('LANG', 'C.UTF-8'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('VSCODE_GIT_IPC_HANDLE', '/tmp/vscode-git-b36af586fe.sock'), ('TERM_PROGRAM', 'vscode'), ('SSH_AUTH_SOCK', '/tmp/vscode-ssh-auth-9a75e9c8-d3c8-4c85-bd82-5bdef237d1ab.sock'), ('AMENT_PREFIX_PATH', '/opt/ros/humble'), ('DEBIAN_FRONTEND', 'noninteractive'), ('SHELL', '/bin/bash'), ('VSCODE_GIT_ASKPASS_EXTRA_ARGS', ''), ('PWD', '/root/patrol_robot/build/aws_robomaker_small_warehouse_world'), ('TURTLEBOT3_MODEL', 'burger'), ('LC_ALL', 'C.UTF-8'), ('GAZEBO_PLUGIN_PATH', '/opt/ros/humble/lib:/usr/lib/x86_64-linux-gnu/gazebo-11/plugins'), ('PYTHONPATH', '/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages'), ('NVIDIA_VISIBLE_DEVICES', 'all'), ('COLCON', '1')]), 'shell': False}
+[0.026584] (aws_robomaker_small_warehouse_world) StderrLine: {'line': b'\x1b[0mCMake Deprecation Warning at CMakeLists.txt:1 (cmake_minimum_required):\n'}
+[0.026755] (aws_robomaker_small_warehouse_world) StderrLine: {'line': b'  Compatibility with CMake < 2.8.12 will be removed from a future version of\n'}
+[0.026812] (aws_robomaker_small_warehouse_world) StderrLine: {'line': b'  CMake.\n'}
+[0.026858] (aws_robomaker_small_warehouse_world) StderrLine: {'line': b'\n'}
+[0.026904] (aws_robomaker_small_warehouse_world) StderrLine: {'line': b'  Update the VERSION argument <min> value or use a ...<max> suffix to tell\n'}
+[0.026951] (aws_robomaker_small_warehouse_world) StderrLine: {'line': b'  CMake that the project does not need compatibility with older versions.\n'}
+[0.026994] (aws_robomaker_small_warehouse_world) StderrLine: {'line': b'\n'}
+[0.027035] (aws_robomaker_small_warehouse_world) StderrLine: {'line': b'\x1b[0m\n'}
+[0.099899] (-) TimerEvent: {}
+[0.129028] (aws_robomaker_small_warehouse_world) StdoutLine: {'line': b'-- The C compiler identification is GNU 11.4.0\n'}
+[0.200020] (-) TimerEvent: {}
+[0.206378] (aws_robomaker_small_warehouse_world) StdoutLine: {'line': b'-- The CXX compiler identification is GNU 11.4.0\n'}
+[0.218800] (aws_robomaker_small_warehouse_world) StdoutLine: {'line': b'-- Detecting C compiler ABI info\n'}
+[0.295167] (aws_robomaker_small_warehouse_world) StdoutLine: {'line': b'-- Detecting C compiler ABI info - done\n'}
+[0.300091] (-) TimerEvent: {}
+[0.302244] (aws_robomaker_small_warehouse_world) StdoutLine: {'line': b'-- Check for working C compiler: /usr/bin/cc - skipped\n'}
+[0.304203] (aws_robomaker_small_warehouse_world) StdoutLine: {'line': b'-- Detecting C compile features\n'}
+[0.305016] (aws_robomaker_small_warehouse_world) StdoutLine: {'line': b'-- Detecting C compile features - done\n'}
+[0.310422] (aws_robomaker_small_warehouse_world) StdoutLine: {'line': b'-- Detecting CXX compiler ABI info\n'}
+[0.392953] (aws_robomaker_small_warehouse_world) StdoutLine: {'line': b'-- Detecting CXX compiler ABI info - done\n'}
+[0.398599] (aws_robomaker_small_warehouse_world) StdoutLine: {'line': b'-- Check for working CXX compiler: /usr/bin/c++ - skipped\n'}
+[0.398791] (aws_robomaker_small_warehouse_world) StdoutLine: {'line': b'-- Detecting CXX compile features\n'}
+[0.399120] (aws_robomaker_small_warehouse_world) StdoutLine: {'line': b'-- Detecting CXX compile features - done\n'}
+[0.400188] (-) TimerEvent: {}
+[0.412401] (aws_robomaker_small_warehouse_world) StderrLine: {'line': b'\x1b[31mCMake Error at CMakeLists.txt:4 (find_package):\n'}
+[0.412582] (aws_robomaker_small_warehouse_world) StderrLine: {'line': b'  By not providing "Findcatkin.cmake" in CMAKE_MODULE_PATH this project has\n'}
+[0.412628] (aws_robomaker_small_warehouse_world) StderrLine: {'line': b'  asked CMake to find a package configuration file provided by "catkin", but\n'}
+[0.412664] (aws_robomaker_small_warehouse_world) StderrLine: {'line': b'  CMake did not find one.\n'}
+[0.412693] (aws_robomaker_small_warehouse_world) StderrLine: {'line': b'\n'}
+[0.412722] (aws_robomaker_small_warehouse_world) StderrLine: {'line': b'  Could not find a package configuration file provided by "catkin" with any\n'}
+[0.412758] (aws_robomaker_small_warehouse_world) StderrLine: {'line': b'  of the following names:\n'}
+[0.412797] (aws_robomaker_small_warehouse_world) StderrLine: {'line': b'\n'}
+[0.412824] (aws_robomaker_small_warehouse_world) StderrLine: {'line': b'    catkinConfig.cmake\n'}
+[0.412858] (aws_robomaker_small_warehouse_world) StderrLine: {'line': b'    catkin-config.cmake\n'}
+[0.412885] (aws_robomaker_small_warehouse_world) StderrLine: {'line': b'\n'}
+[0.412911] (aws_robomaker_small_warehouse_world) StderrLine: {'line': b'  Add the installation prefix of "catkin" to CMAKE_PREFIX_PATH or set\n'}
+[0.412937] (aws_robomaker_small_warehouse_world) StderrLine: {'line': b'  "catkin_DIR" to a directory containing one of the above files.  If "catkin"\n'}
+[0.412962] (aws_robomaker_small_warehouse_world) StderrLine: {'line': b'  provides a separate development package or SDK, be sure it has been\n'}
+[0.412989] (aws_robomaker_small_warehouse_world) StderrLine: {'line': b'  installed.\n'}
+[0.413016] (aws_robomaker_small_warehouse_world) StderrLine: {'line': b'\n'}
+[0.413043] (aws_robomaker_small_warehouse_world) StderrLine: {'line': b'\x1b[0m\n'}
+[0.413069] (aws_robomaker_small_warehouse_world) StdoutLine: {'line': b'-- Configuring incomplete, errors occurred!\n'}
+[0.413107] (aws_robomaker_small_warehouse_world) StdoutLine: {'line': b'See also "/root/patrol_robot/build/aws_robomaker_small_warehouse_world/CMakeFiles/CMakeOutput.log".\n'}
+[0.415192] (aws_robomaker_small_warehouse_world) CommandEnded: {'returncode': 1}
+[0.452728] (aws_robomaker_small_warehouse_world) JobEnded: {'identifier': 'aws_robomaker_small_warehouse_world', 'rc': 1}
+[0.463508] (-) EventReactorShutdown: {}

@@ -1,0 +1,2 @@
+Invoking command in '/root/patrol_robot/build/aws_robomaker_small_warehouse_world': /usr/bin/cmake /root/patrol_robot/src/aws-robomaker-small-warehouse-world -DCATKIN_INSTALL_INTO_PREFIX_ROOT=0 -DCMAKE_INSTALL_PREFIX=/root/patrol_robot/install/aws_robomaker_small_warehouse_world
+Invoked command in '/root/patrol_robot/build/aws_robomaker_small_warehouse_world' returned '1': /usr/bin/cmake /root/patrol_robot/src/aws-robomaker-small-warehouse-world -DCATKIN_INSTALL_INTO_PREFIX_ROOT=0 -DCMAKE_INSTALL_PREFIX=/root/patrol_robot/install/aws_robomaker_small_warehouse_world
