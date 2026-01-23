@@ -1,0 +1,1 @@
+/root/patrol_robot/src/patrol_control/launch/spawn_turtlebot3.launch.py

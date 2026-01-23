@@ -1,0 +1,1 @@
+/root/patrol_robot/build/patrol_control/launch/collision_monitor_node.launch.py
