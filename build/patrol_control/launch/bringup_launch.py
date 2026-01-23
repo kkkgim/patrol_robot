@@ -1,1 +1,0 @@
-/root/patrol_robot/src/patrol_control/launch/bringup_launch.py
