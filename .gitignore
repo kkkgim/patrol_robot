@@ -1,0 +1,4 @@
+# --- ROS 2 빌드 결과물 ---
+install/
+build/
+log/
