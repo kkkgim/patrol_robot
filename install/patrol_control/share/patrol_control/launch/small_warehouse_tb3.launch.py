@@ -1,1 +1,0 @@
-/root/patrol_robot/build/patrol_control/launch/small_warehouse_tb3.launch.py

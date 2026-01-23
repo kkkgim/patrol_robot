@@ -1,1 +1,0 @@
-/root/patrol_robot/build/patrol_control/launch/tb3_simulation_launch.py
