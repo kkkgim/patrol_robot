@@ -108,13 +108,10 @@ def generate_launch_description():
         default_value='True',
         description='Use simulation (Gazebo) clock if true')
 
-    # declare_params_file_cmd = DeclareLaunchArgument(
-    #     'params_file',
-    #     default_value=os.path.join(bringup_dir, 'params', 'nav2_params.yaml'),
-    #     description='Full path to the ROS2 parameters file to use for all launched nodes')
 
     declare_params_file_cmd = DeclareLaunchArgument(
         'params_file',
+        # default_value=os.path.join(bringup_dir, 'params', 'nav2_params.yaml'), 변경
         default_value=os.path.join(patrol_control_dir, 'params', 'nav2_params.yaml'),
         description='Full path to the ROS2 parameters file to use for all launched nodes')
 
@@ -181,7 +178,7 @@ def generate_launch_description():
                               'use_composition': use_composition,
                               'use_respawn': use_respawn,
                               'container_name': 'nav2_container'}.items()),
-
+        ## rviz_launch 추가 
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(launch_dir, 'rviz_launch.py')),
             launch_arguments={'namespace': namespace,

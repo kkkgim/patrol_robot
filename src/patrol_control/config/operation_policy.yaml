@@ -1,0 +1,5 @@
+control_node:
+  ros__parameters:
+    operation_start: "22:00"
+    operation_end: "06:00"
+    auto_patrol: true

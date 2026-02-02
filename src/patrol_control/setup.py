@@ -43,7 +43,8 @@ setup(
     },
     entry_points={
         'console_scripts': [
-
+            'control_node = patrol_control.control_node:main',
+            'executor_node = patrol_control.executor_node:main',
         ],
     },
 )
