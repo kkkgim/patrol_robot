@@ -1,14 +1,10 @@
-#!/usr/bin/env python3
-
 import rclpy
 from rclpy.node import Node
-from patrol_control.robot_types import RobotState, RobotCmd
+from patrol_control.robot_types import RobotState, STATE_COMMAND_MAP
 from datetime import datetime, time
 
 from std_msgs.msg import String
 from std_srvs.srv import Trigger
-
-
 
 class ControlNode(Node):
     """
@@ -88,10 +84,10 @@ class ControlNode(Node):
 
         if self._is_in_operation_time():
             self.get_logger().info('Operation time reached → auto patrol')
-            if self.state in [RobotState.PATROL, RobotState.RETURN_HOME]:
+            if self.state in [RobotState.PATROL_STARTED, RobotState.RETURN_HOME]:
                 self.get_logger().info(f'Cannot start patrol from {self.state.value}')
                 return
-            self._transition_to_patrol()
+            self._transition(RobotState.PATROL_STARTED)
 
     # ======================================================
     # Service Callbacks (FSM Entry Points)
@@ -102,7 +98,7 @@ class ControlNode(Node):
             response.message = f'Cannot start patrol from {self.state.value}'
             return response
 
-        self._transition_to_patrol()
+        self._transition(RobotState.PATROL_STARTED)
         response.success = True
         response.message = 'Patrol started'
         return response
@@ -113,18 +109,19 @@ class ControlNode(Node):
             response.message = 'Already stopped'
             return response
 
-        self._transition_to_stopped()
+        self._transition(RobotState.STOPPED)
         response.success = True
         response.message = 'Robot stopped'
         return response
 
     def return_home_cb(self, request, response):
-        if self.state not in [RobotState.IDLE]:
+        if self.state == RobotState.RETURN_HOME:
             response.success = False
-            response.message = f'Cannot return home from {self.state.value}'
+            response.message = 'Already retuning'
             return response
-
-        self._transition_to_return_home()
+        
+        self._transition(RobotState.RETURN_HOME)
+        
         response.success = True
         response.message = 'Returning home'
         return response
@@ -148,17 +145,12 @@ class ControlNode(Node):
     # ======================================================
     # Transitions
     # ======================================================
-    def _transition_to_patrol(self):
-        self.state = RobotState.PATROL_STARTED
-        self.command_pub.publish(String(data=RobotCmd.START_PATROL.value))
+    def _transition(self, next_state: RobotState):
+        cmd = STATE_COMMAND_MAP[next_state]
 
-    def _transition_to_return_home(self):
-        self.state = RobotState.RETURN_HOME
-        self.command_pub.publish(String(data=RobotCmd.RETURN_HOME.value))
-
-    def _transition_to_stopped(self):
-        self.state = RobotState.STOPPED
-        self.command_pub.publish(String(data=RobotCmd.STOP.value))
+        self.get_logger().info(f'{self.state} → {next_state}')
+        self.state = next_state
+        self.command_pub.publish(String(data=cmd.value))
 
     # ======================================================
     # Policy Helpers
@@ -186,10 +178,14 @@ class ControlNode(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = ControlNode()
-    rclpy.spin(node)
-    node.destroy_node()
-    rclpy.shutdown()
+
+    try:
+        rclpy.spin(node)
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
 
 
 if __name__ == '__main__':
     main()
+ 
