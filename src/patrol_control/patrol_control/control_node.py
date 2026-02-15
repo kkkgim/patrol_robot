@@ -18,7 +18,7 @@ class ControlNode(Node):
         super().__init__('control_node')
 
         # ===============================
-        # FSM State
+        # Control State
         # ===============================
         self._state: RobotState = RobotState.IDLE
 
