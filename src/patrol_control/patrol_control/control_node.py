@@ -8,7 +8,7 @@ from std_srvs.srv import Trigger
 
 class ControlNode(Node):
     """
-    FSM 기반 중앙 제어 노드
+    중앙 제어 노드
     - 상태 관리 (RobotState)
     - 정책 판단
     - executor에 명령 전달
