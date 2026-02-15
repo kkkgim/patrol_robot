@@ -141,6 +141,7 @@ class ExecutorNode(Node):
     def _stop(self):
         """로봇 정지"""
         self._cancel_if_active()
+        # 작업 결과 처리
         self.get_logger().info('Stopping robot')
         self.status = RobotState.STOPPED
 
