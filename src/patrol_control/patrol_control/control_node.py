@@ -90,7 +90,7 @@ class ControlNode(Node):
             self._transition(RobotState.PATROL_STARTED)
 
     # ======================================================
-    # Service Callbacks (FSM Entry Points)
+    # Service Callbacks
     # ======================================================
     def start_patrol_cb(self, request, response):
         if self.state in [RobotState.FAILED, RobotState.PATROL_STARTED]:
