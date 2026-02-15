@@ -104,9 +104,9 @@ class ControlNode(Node):
         return response
 
     def stop_cb(self, request, response):
-        if self.state == RobotState.STOPPED:
+        if self.state not in [RobotState.PATROL_STARTED, RobotState.RETURN_HOME]:
             response.success = False
-            response.message = 'Already stopped'
+            response.message = f'Cannot stop patrol from {self.state.value}'
             return response
 
         self._transition(RobotState.STOPPED)
@@ -115,9 +115,9 @@ class ControlNode(Node):
         return response
 
     def return_home_cb(self, request, response):
-        if self.state == RobotState.RETURN_HOME:
+        if self.state in [RobotState.FAILED, RobotState.RETURN_HOME]:
             response.success = False
-            response.message = 'Already retuning'
+            response.message = f'Cannot return home from {self.state.value}'
             return response
         
         self._transition(RobotState.RETURN_HOME)
@@ -136,10 +136,10 @@ class ControlNode(Node):
             self.get_logger().warn(f'Unknown executor status: {msg.data}')
             return
 
-        if incoming_state in [RobotState.COMPLETED,RobotState.STOPPED]:
-            self.get_logger().info(f'{incoming_state} → {RobotState.IDLE}')
-            self.state = RobotState.IDLE
-        elif incoming_state == RobotState.FAILED:
+        # if incoming_state in [RobotState.COMPLETED, RobotState.STOPPED]:
+        #     self.get_logger().info(f'{incoming_state} → {RobotState.IDLE}')
+        #     self.state = RobotState.IDLE
+        if incoming_state == RobotState.FAILED:
             self.state = RobotState.FAILED
 
     # ======================================================
