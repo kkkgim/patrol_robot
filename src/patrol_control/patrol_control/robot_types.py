@@ -2,9 +2,9 @@ from enum import Enum
 
 class RobotState(Enum):
     IDLE = 'IDLE'
-    PATROL_STARTED = 'PATROL_STARTED'
+    START_PATROL = 'START_PATROL'
     RETURN_HOME = 'RETURN_HOME'
-    STOPPED = 'STOPPED'
+    STOP = 'STOP'
     CANCELLED = 'CANCELLED'
     COMPLETED = 'COMPLETED'
     FAILED = 'FAILED'
@@ -28,8 +28,3 @@ class TaskResult(Enum):
     def to_string(self) -> str:
             return self.name
     
-STATE_COMMAND_MAP = {
-    RobotState.PATROL_STARTED: RobotCmd.START_PATROL,
-    RobotState.RETURN_HOME: RobotCmd.RETURN_HOME,
-    RobotState.STOPPED: RobotCmd.STOP,
-}

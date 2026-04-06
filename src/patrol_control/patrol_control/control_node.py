@@ -1,186 +1,213 @@
+#!/usr/bin/env python3
+"""
+Control Node - 순찰 로봇 제어 노드
+"""
 import rclpy
+import yaml
+import os
 from rclpy.node import Node
-from patrol_control.robot_types import RobotState, STATE_COMMAND_MAP
-from datetime import datetime, time
-
 from std_msgs.msg import String
 from std_srvs.srv import Trigger
 
-class ControlNode(Node):
-    """
-    중앙 제어 노드
-    - 상태 관리 (RobotState)
-    - 정책 판단
-    - executor에 명령 전달
-    """
+from rcl_interfaces.msg import SetParametersResult
 
+CONFIG_PATH = os.environ.get(
+    'CONFIG_PATH',
+    '/root/patrol_robot/src/patrol_control/config/operation_policy.yaml'
+)
+
+class ControlNode(Node):
     def __init__(self):
         super().__init__('control_node')
 
-        # ===============================
-        # Control State
-        # ===============================
-        self._state: RobotState = RobotState.IDLE
-
-        # ===============================
-        # Parameters (운영 정책)
-        # ===============================
+        # 파라미터 선언 (기본값은 코드 fallback용)
         self.declare_parameter('operation_start', '22:00')
         self.declare_parameter('operation_end', '06:00')
         self.declare_parameter('auto_patrol', True)
 
-        # ===============================
-        # Services (from FMS / UI)
-        # ===============================
-        self.create_service(Trigger, '/control/start_patrol', self.start_patrol_cb)
-        self.create_service(Trigger, '/control/stop', self.stop_cb)
-        self.create_service(Trigger, '/control/return_home', self.return_home_cb)
+        self.last_command = None
 
-        # ===============================
-        # Publishers
-        # ===============================
-        self.state_pub = self.create_publisher(String, '/control/state', 10)
+        # config 초기값 로드
+        self._load_config_from_yaml()
+
+        # 현재 파라미터 값을 멤버변수에 적용
+        self.apply_parameters()
+
+        # 웹서버에서 set_parameters 호출 시 콜백
+        self.add_on_set_parameters_callback(self.on_param_change)
+
+        # Publisher
         self.command_pub = self.create_publisher(String, '/control/command', 10)
 
-        # ===============================
-        # Subscriptions
-        # ===============================
-        self.create_subscription(String,'/executor/status', self.executor_status_cb, 10)
+        # 서비스 서버
+        self.start_srv = self.create_service(
+            Trigger,
+            '/control/start_patrol',
+            self.start_patrol_cb
+        )
+        self.home_srv = self.create_service(
+            Trigger,
+            '/control/return_home',
+            self.return_home_cb
+        )
+        self.stop_srv = self.create_service(
+            Trigger,
+            '/control/stop',
+            self.stop_cb
+        )
 
-        # ===============================
-        # Timer
-        # ===============================
-        self.timer = self.create_timer(1.0, self.timer_cb)
+        # 타이머 (자동 순찰 체크 - 10초마다)
+        self.timer = self.create_timer(10.0, self.timer_cb)
 
+        self.create_subscription(String,'/executor/status',self.status_cb,1)
         self.get_logger().info('Control Node started')
 
+    # -------------------------------------------------------
+    # Config 로드
+    # -------------------------------------------------------
+    def _load_config_from_yaml(self):
+        """YAML 파일에서 운영 설정 읽어서 파라미터에 반영"""
+        try:
+            with open(CONFIG_PATH, 'r') as f:
+                data = yaml.safe_load(f)
 
-    # ===============================
-    # State Property 
-    # ===============================
-    @property
-    def state(self):
-        return self._state
+            # operation_policy.yaml 구조:
+            ros_params = (
+                data.get('control_node', {})
+                    .get('ros__parameters', {})
+            )
 
-    @state.setter
-    def state(self, new_state: RobotState):
-        if self._state != new_state:
-            old_state = self._state
-            self._state = new_state
-            
-            # 상태가 바뀔 때 자동으로 publish
-            msg = String(data=self._state.value)
-            self.state_pub.publish(msg)
-            
-            self.get_logger().info(f'Robot state: {old_state.name} → {new_state.name}')
-
-    # ======================================================
-    # Timer
-    # ======================================================
-    def timer_cb(self):
-        # 자동 순찰 정책
-        if not self.get_parameter('auto_patrol').value:
-            return
-
-        if self._is_in_operation_time():
-            self.get_logger().info('Operation time reached → auto patrol')
-            if self.state in [RobotState.PATROL_STARTED, RobotState.RETURN_HOME]:
-                self.get_logger().info(f'Cannot start patrol from {self.state.value}')
+            if not ros_params:
+                self.get_logger().warn('[Config] ros__parameters 없음, 기본값 사용')
                 return
-            self._transition(RobotState.PATROL_STARTED)
 
-    # ======================================================
-    # Service Callbacks
-    # ======================================================
+            # 파라미터 덮어쓰기
+            for key, value in ros_params.items():
+                self.set_parameters([
+                    rclpy.parameter.Parameter(key, value=value)
+                ])
+
+            self.get_logger().info(f'[Config] YAML 로드 완료: {ros_params}')
+
+        except FileNotFoundError:
+            self.get_logger().warn(f'[Config] 파일 없음: {CONFIG_PATH}, 기본값 사용')
+        except Exception as e:
+            self.get_logger().error(f'[Config] 로드 실패: {e}, 기본값 사용')
+
+    # -------------------------------------------------------
+    # 파라미터 적용 / 변경 콜백
+    # -------------------------------------------------------
+    def apply_parameters(self):
+        self.operation_start = self.get_parameter('operation_start').value
+        self.operation_end   = self.get_parameter('operation_end').value
+        self.auto_patrol     = self.get_parameter('auto_patrol').value
+        self.get_logger().info(
+            f'[Params] start={self.operation_start}, '
+            f'end={self.operation_end}, auto_patrol={self.auto_patrol}'
+        )
+
+    def on_param_change(self, params):
+        """웹서버에서 set_parameters 호출 시 자동 실행"""
+
+        for p in params:
+            self.get_logger().info(f'[Param 변경] {p.name} = {p.value}')
+            if hasattr(self, p.name):
+                        setattr(self, p.name, p.value)
+        
+        return SetParametersResult(successful=True)
+
+    # -------------------------------------------------------
+    # 타이머
+    # -------------------------------------------------------
+    def timer_cb(self):
+        """자동 순찰 타이머"""
+        self.get_logger().info(f'[Auto Patrol Check] Auto Patrol Status: {self.auto_patrol}')
+        if not self.auto_patrol:
+            return
+              
+        # 1. ROS 2 시뮬레이션 시간 가져오기 (Time 객체)
+        now_ros = self.get_clock().now()
+        
+        # 2. Time 객체를 초 단위로 변환 후 HH:MM 문자열 생성
+        # nanoseconds를 초로 환산 (10^9로 나눔)
+        total_seconds = now_ros.nanoseconds / 1e9
+        m, _ = divmod(int(total_seconds), 60)
+        h, m = divmod(m, 60)
+        
+        # 시뮬레이션 타임이 24시간을 넘을 수 있으므로 % 24 처리
+        now_str = f"{h % 24:02d}:{m:02d}"
+        self.get_logger().info(f'[Timer Check] now: {now_str}')
+        
+        start = self.operation_start
+        end   = self.operation_end
+
+        if self.is_operation_time(now_str, start, end):
+            self.get_logger().info(f'[Timer] 운영시간 [{now_str}] - 자동 순찰')
+            self.send_command('START_PATROL')
+
+    def is_operation_time(self, now: str, start: str, end: str):
+        """운영시간 확인 (자정 넘는 경우 처리)"""
+        if start < end:
+            return start <= now <= end
+        else:
+            # 자정 넘음: 22:00 ~ 06:00
+            return now >= start or now <= end
+
+    # -------------------------------------------------------
+    # 명령 전송
+    # -------------------------------------------------------
+    def send_command(self, command: str):
+        msg = String()
+        if self.last_command==command or self.last_command=='FAILED' :
+            return
+        
+        msg.data = command
+        self.command_pub.publish(msg)
+        self.get_logger().info(f'[Command] {command}')
+
+
+    # -------------------------------------------------------
+    # 서비스 콜백
+    # -------------------------------------------------------
     def start_patrol_cb(self, request, response):
-        if self.state in [RobotState.FAILED, RobotState.PATROL_STARTED]:
-            response.success = False
-            response.message = f'Cannot start patrol from {self.state.value}'
-            return response
-
-        self._transition(RobotState.PATROL_STARTED)
+        self.get_logger().info('Service: START_PATROL')
+        self.send_command('START_PATROL')
         response.success = True
         response.message = 'Patrol started'
-        return response
 
-    def stop_cb(self, request, response):
-        if self.state not in [RobotState.PATROL_STARTED, RobotState.RETURN_HOME]:
-            response.success = False
-            response.message = f'Cannot stop patrol from {self.state.value}'
-            return response
-
-        self._transition(RobotState.STOPPED)
-        response.success = True
-        response.message = 'Robot stopped'
         return response
 
     def return_home_cb(self, request, response):
-        if self.state in [RobotState.FAILED, RobotState.RETURN_HOME]:
-            response.success = False
-            response.message = f'Cannot return home from {self.state.value}'
-            return response
-        
-        self._transition(RobotState.RETURN_HOME)
-        
+        self.get_logger().info('Service: RETURN_HOME')
+        self.send_command('RETURN_HOME')
         response.success = True
         response.message = 'Returning home'
+
+        return response
+
+    def stop_cb(self, request, response):
+        self.get_logger().info('Service: STOP')
+        self.send_command('STOP')
+        response.success = True
+        response.message = 'Stopped'
+
         return response
     
-    # ======================================================
-    # Subscriptions Callbacks
-    # ======================================================
-    def executor_status_cb(self, msg: String):
-        try:
-            incoming_state = RobotState(msg.data)
-        except ValueError:
-            self.get_logger().warn(f'Unknown executor status: {msg.data}')
-            return
+    # -------------------------------------------------------
+    # 구독 콜백
+    # -------------------------------------------------------
+    def status_cb(self, msg: String):
+        self.last_command = msg.data
+        self.get_logger().info(f'Received status: {msg.data}')
 
-        # if incoming_state in [RobotState.COMPLETED, RobotState.STOPPED]:
-        #     self.get_logger().info(f'{incoming_state} → {RobotState.IDLE}')
-        #     self.state = RobotState.IDLE
-        if incoming_state == RobotState.FAILED:
-            self.state = RobotState.FAILED
-
-    # ======================================================
-    # Transitions
-    # ======================================================
-    def _transition(self, next_state: RobotState):
-        cmd = STATE_COMMAND_MAP[next_state]
-
-        self.get_logger().info(f'{self.state} → {next_state}')
-        self.state = next_state
-        self.command_pub.publish(String(data=cmd.value))
-
-    # ======================================================
-    # Policy Helpers
-    # ======================================================
-    def _is_in_operation_time(self) -> bool:
-        start_str = self.get_parameter('operation_start').value
-        end_str = self.get_parameter('operation_end').value
-
-        start = self._parse_time(start_str)
-        end = self._parse_time(end_str)
-        now = datetime.now().time()
-
-        # 자정 안 넘는 경우 (09:00 ~ 18:00)
-        if start < end:
-            return start <= now <= end
-
-        # 자정 넘는 경우 (22:00 ~ 06:00)
-        return now >= start or now <= end
-
-    def _parse_time(self, t: str) -> time:
-        h, m = map(int, t.split(':'))
-        return time(hour=h, minute=m)
-    
 
 def main(args=None):
     rclpy.init(args=args)
     node = ControlNode()
-
     try:
         rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
     finally:
         node.destroy_node()
         rclpy.shutdown()
@@ -188,4 +215,3 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
- 

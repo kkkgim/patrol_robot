@@ -1,292 +1,277 @@
+#!/usr/bin/env python3
+"""
+Executor Node - 순찰 로봇 실행 노드
+- command_cb: 즉시 리턴 (블로킹 금지)
+- _execute_command: 별도 스레드에서 Nav2 호출 (time.sleep OK)
+- 웨이포인트: operation_policy.yaml에서 로드
+- 웨이포인트: /patrol/waypoints 토픽으로 퍼블리시 (웹 시각화)
+"""
 import rclpy
 import time
+import threading
+import yaml
+import os
+
 from rclpy.node import Node
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
-from std_msgs.msg import String
-
-from geometry_msgs.msg import PoseStamped
 from rclpy.duration import Duration
+from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
+
+from std_msgs.msg import String
+from geometry_msgs.msg import PoseStamped
 
 from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
 from patrol_control.robot_types import RobotState, RobotCmd
-from typing import Callable, Optional
+from typing import Optional
+
+
+CONFIG_PATH = os.environ.get(
+    'CONFIG_PATH',
+    '/root/patrol_robot/src/patrol_control/config/operation_policy.yaml'
+)
 
 class ExecutorNode(Node):
-    """
-    실행 전용 노드
-    - control_node 명령 수행
-    - Nav2 실제 호출
-    """
-    
-    # 상수 정의
-    CANCEL_TIMEOUT_SEC = 3.0
+
+    CANCEL_TIMEOUT_SEC        = 3.0
     FEEDBACK_LOG_INTERVAL_SEC = 1.0
-    TASK_POLL_INTERVAL_SEC = 0.1
+    TASK_POLL_INTERVAL_SEC    = 0.1
 
     def __init__(self):
         super().__init__('executor_node')
 
         self._status = RobotState.IDLE
 
-        # ===============================
-        # Nav2 Navigator
-        # ===============================
+        # 실행 스레드 관리
+        self._exec_thread: Optional[threading.Thread] = None
+        self._exec_lock   = threading.Lock()
+
+        # ── Nav2 ──
         self.navigator = BasicNavigator()
         self.navigator.waitUntilNav2Active()
         self.get_logger().info('Nav2 is active')
 
-        # ===============================
-        # Subscriptions
-        # ===============================
+        # ── Subscriber ──
         self.cb_group = ReentrantCallbackGroup()
         self.create_subscription(
-                String,
-                '/control/command',
-                self.command_cb,
-                10,
-                callback_group=self.cb_group
-            )
-        
-        # ===============================
-        # Publishers
-        # ===============================
-        self.status_pub = self.create_publisher(String, '/executor/status', 10)
+            String, '/control/command', self.command_cb, 1,
+            callback_group=self.cb_group
+        )
 
-        # ===============================
-        # Waypoints
-        # ===============================
-        self.waypoints = self._load_waypoints()
+        # ── Publisher: 상태 ──
+        status_qos = QoSProfile(
+            reliability=ReliabilityPolicy.RELIABLE,
+            durability=DurabilityPolicy.TRANSIENT_LOCAL,
+            depth=1
+        )
+        self.status_pub = self.create_publisher(
+            String, '/executor/status', qos_profile=status_qos
+        )
 
         self.get_logger().info('Executor Node started')
 
-
-    # ===============================
+    # =====================================================
     # State Property
-    # ===============================
+    # =====================================================
     @property
     def status(self):
-        return self._status  
+        return self._status
 
     @status.setter
     def status(self, new_status: RobotState):
-        if self._status != new_status: 
-            old_status = self._status
+        if self._status != new_status:
+            old = self._status
             self._status = new_status
-            
             if hasattr(self, 'status_pub'):
-                msg = String(data=self._status.value)
-                self.status_pub.publish(msg)
+                self.status_pub.publish(String(data=self._status.value))
+            self.get_logger().info(f'State: {old.name} → {new_status.name}')
+
+    # =====================================================
+    # Waypoints
+    # =====================================================
+    def _load_waypoints(self):
+        try:
+            with open(CONFIG_PATH, 'r') as f:
+                data = yaml.safe_load(f)
+            raw = data.get('waypoints', [])
+            if not raw:
+                self.get_logger().warn('[Waypoints] config에 없음, 기본값 사용')
+                return self._default_waypoints()
+            waypoints = [self.get_position('map', float(wp[0]), float(wp[1])) for wp in raw]
             
-            self.get_logger().info(f'State change: {old_status.name} → {new_status.name}')
+            raw = data.get('homepoints', [])
+            if not raw:
+                self.get_logger().warn('[Waypoints] config에 없음, 기본값 사용')
+                return self._default_waypoints()
 
+            return waypoints
+        except FileNotFoundError:
+            self.get_logger().warn(f'[Waypoints] 파일 없음: {CONFIG_PATH}')
+            return self._default_waypoints()
+        except Exception as e:
+            self.get_logger().error(f'[Waypoints] 로드 실패: {e}')
+            return self._default_waypoints()
+        
+    def _load_homepoint(self):
+        try:
+            with open(CONFIG_PATH, 'r') as f:
+                data = yaml.safe_load(f)
+            raw = data.get('homepoints', [])
+            if not raw:
+                return self._default_homepoint()
 
-    # ======================================================
-    # Command Callback
-    # ======================================================
+            x, y = raw[0]
+            return self.get_position('map', float(x), float(y))
+            
+        except FileNotFoundError:
+            self.get_logger().warn(f'[Waypoints] 파일 없음: {CONFIG_PATH}')
+            return self._default_homepoint()
+        except Exception as e:
+            self.get_logger().error(f'[Waypoints] 로드 실패: {e}')
+            return self._default_homepoint()
+
+    def _default_waypoints(self):
+        coords = [(1.0, 0.0), (1.0, 1.0), (0.0, 1.0), (0.0, 0.0)]
+        return [self.get_position('map', x, y) for x, y in coords]
+    
+    def _default_homepoint(self):
+        return self.get_position('map', 0.0, 0.0)
+
+    # =====================================================
+    #   Command Callback - 즉시 리턴 (블로킹 절대 금지)
+    #   spin_once 호출 금지 → MultiThreadedExecutor와 충돌
+    # =====================================================
     def command_cb(self, msg: String):
         command = msg.data
         self.get_logger().info(f'Received command: {command}')
 
+        # 별도 스레드로 실행 → ROS2 spin 간섭 없음
+        with self._exec_lock:
+            self._exec_thread = threading.Thread(
+                target=self._execute_command,
+                args=(command,),
+                daemon=True
+            )
+            self._exec_thread.start()
+
+    # =====================================================
+    # 실행 로직 (별도 스레드 - time.sleep 사용 가능)
+    # =====================================================
+    def _execute_command(self, command: str):
         if command == RobotCmd.START_PATROL.to_string():
             self._start_patrol()
-
         elif command == RobotCmd.RETURN_HOME.to_string():
             self._return_home()
-
         elif command == RobotCmd.STOP.to_string():
             self._stop()
+        else:
+            self.get_logger().warn(f'Unknown command: {command}')
 
-
-    # ======================================================
-    # Execution Logic
-    # ======================================================
     def _start_patrol(self):
-        """순찰 시작"""
         self._cancel_if_active()
+        self.status = RobotState.START_PATROL
 
-        self.status = RobotState.PATROL_STARTED
-
+        self.waypoints = self._load_waypoints()
         self.get_logger().info(f'Start patrol: {len(self.waypoints)} waypoints')
+
         self.navigator.followWaypoints(self.waypoints)
-
-        # 순찰 완료 대기
-        result = self._wait_for_task_completion(
-            feedback_callback=self._log_patrol_progress
-        )
-        
-        # 작업 결과 처리
-        self._handle_task_result(result, "Patrol")
-
+        result = self._wait_for_task_completion(self._log_patrol_progress)
+        self._handle_task_result(result, 'Patrol')
 
     def _return_home(self):
-        """홈으로 복귀"""
         self._cancel_if_active()
         self.status = RobotState.RETURN_HOME
-
-        home_pose = self.get_position('map', 0.0, 0.0)
-        self.navigator.goToPose(home_pose)
-        
+        self.homepoints = self._load_homepoint()
         self.get_logger().info('Returning home...')
-        
-        # 귀환 완료 대기
-        result = self._wait_for_task_completion(
-            feedback_callback=self._log_return_progress
-        )
-        
-        # 작업 결과 처리
-        self._handle_task_result(result, "Return home")
 
-        
+        self.navigator.goToPose(self.homepoints)
+        result = self._wait_for_task_completion(self._log_return_progress)
+        self._handle_task_result(result, 'Return home')
+
     def _stop(self):
-        """로봇 정지"""
         self._cancel_if_active()
-        # 작업 결과 처리
         self.get_logger().info('Stopping robot')
-        self.status = RobotState.STOPPED
+        self.status = RobotState.STOP
 
-
-    # ======================================================
-    # Utilities
-    # ======================================================
-    def _wait_for_task_completion(self, feedback_callback: Optional[Callable] = None) -> TaskResult:
-        """
-        Args:
-            feedback_callback: 피드백 로깅 함수
-        Returns:
-            TaskResult: 작업 결과
-        """
+    # =====================================================
+    # Utilities (별도 스레드 - time.sleep OK)
+    # =====================================================
+    def _wait_for_task_completion(self, feedback_callback=None) -> TaskResult:
         last_log_time = self.get_clock().now()
-        
+
         while not self.navigator.isTaskComplete():
-            # 중간에 취소되었는지 확인
             if self._is_task_cancelled():
-                self.get_logger().info('Task was cancelled')
+                self.get_logger().info('Task cancelled externally')
                 return TaskResult.CANCELED
-            
-            # 피드백 처리 (로깅 간격 제어)
+
             feedback = self.navigator.getFeedback()
             if feedback and feedback_callback:
-                current_time = self.get_clock().now()
-                elapsed_sec = (current_time - last_log_time).nanoseconds / 1e9
-                
-                if elapsed_sec >= self.FEEDBACK_LOG_INTERVAL_SEC:
+                now = self.get_clock().now()
+                if (now - last_log_time).nanoseconds / 1e9 >= self.FEEDBACK_LOG_INTERVAL_SEC:
                     feedback_callback(feedback)
-                    last_log_time = current_time
-            
-            time.sleep(self.TASK_POLL_INTERVAL_SEC)
-        
-        # 작업 완료 후 결과 반환
+                    last_log_time = now
+
+            time.sleep(self.TASK_POLL_INTERVAL_SEC)  # spin_once 대신
+
         return self.navigator.getResult()
 
-
     def _cancel_if_active(self) -> bool:
-        """
-        활성 작업이 있으면 취소
-        
-        Returns:
-            bool: 취소 성공 여부
-        """
         if self.navigator.isTaskComplete():
             return True
-        
+
         self.get_logger().info('Cancelling current task...')
         self.navigator.cancelTask()
-        
+
         start_time = self.get_clock().now()
-        timeout = Duration(seconds=self.CANCEL_TIMEOUT_SEC)
-        
+        timeout    = Duration(seconds=self.CANCEL_TIMEOUT_SEC)
+
         while not self.navigator.isTaskComplete():
-            elapsed = self.get_clock().now() - start_time
-            
-            if elapsed > timeout:
-                self.get_logger().error(
-                    f'Cancel timeout ({self.CANCEL_TIMEOUT_SEC}s exceeded)'
-                )
+            if self.get_clock().now() - start_time > timeout:
+                self.get_logger().error(f'Cancel timeout ({self.CANCEL_TIMEOUT_SEC}s)')
                 return False
-            
             time.sleep(self.TASK_POLL_INTERVAL_SEC)
 
         while not self._is_task_cancelled():
             time.sleep(self.TASK_POLL_INTERVAL_SEC)
 
         self.get_logger().info('Task cancelled successfully')
-
         return True
 
-
     def _handle_task_result(self, result: TaskResult, task_name: str):
-        """
-        작업 결과 처리
-        
-        Args:
-            result: TaskResult
-            task_name: 작업 이름 (로깅용)
-        """
         if result == TaskResult.SUCCEEDED:
-            self.get_logger().info(f'{task_name} completed successfully')
+            self.get_logger().info(f'{task_name} completed')
             self.status = RobotState.COMPLETED
-            
         elif result == TaskResult.CANCELED:
-            self.get_logger().info(f'{task_name} was cancelled')
+            self.get_logger().info(f'{task_name} cancelled')
             self.status = RobotState.CANCELLED
-            
         else:
             self.get_logger().error(f'{task_name} failed')
             self.status = RobotState.FAILED
 
-
     def _is_task_cancelled(self) -> bool:
-        """현재 작업이 취소되었는지 확인"""
-        return self.status not in [
-            RobotState.PATROL_STARTED,
-            RobotState.RETURN_HOME
-        ]
-
+        return self.status not in [RobotState.START_PATROL, RobotState.RETURN_HOME]
 
     def _log_patrol_progress(self, feedback):
-        """순찰 진행 상황 로깅"""
-        current = feedback.current_waypoint + 1
-        total = len(self.waypoints)
-        self.get_logger().info(f'Patrol progress: [{current}/{total}] waypoints')
-
+        self.get_logger().info(
+            f'Patrol [{feedback.current_waypoint + 1}/{len(self.waypoints)}]'
+        )
 
     def _log_return_progress(self, feedback):
-        """귀환 진행 상황 로깅"""
-        dist = feedback.distance_remaining
-        self.get_logger().info(f'Return home: {dist:.2f}m remaining')
+        self.get_logger().info(f'Return: {feedback.distance_remaining:.2f}m remaining')
 
-
-    def _load_waypoints(self):
-        """Waypoints 로드"""
-        waypoints = []
-
-        coords = [
-            (1.0, 0.0),
-            (1.0, 1.0),
-            (0.0, 1.0),
-            (0.0, 0.0)
-        ]
-
-        for x, y in coords:
-            pose = self.get_position('map', x, y)
-            waypoints.append(pose)
-
-        return waypoints
-
-    
-    def get_position(self, frame_id, x, y):
-        """포즈 생성"""
-        pose = PoseStamped()
-        pose.header.frame_id = frame_id
-        pose.header.stamp = self.get_clock().now().to_msg()
-        pose.pose.position.x = x
-        pose.pose.position.y = y
+    def get_position(self, frame_id: str, x: float, y: float) -> PoseStamped:
+        pose                    = PoseStamped()
+        pose.header.frame_id   = frame_id
+        pose.header.stamp      = self.get_clock().now().to_msg()
+        pose.pose.position.x   = x
+        pose.pose.position.y   = y
         pose.pose.orientation.w = 1.0
-
         return pose
 
 
+# =====================================================
+# Main
+# =====================================================
 def main(args=None):
     rclpy.init(args=args)
     node = ExecutorNode()
@@ -295,7 +280,7 @@ def main(args=None):
     executor.add_node(node)
 
     try:
-        executor.spin() 
+        executor.spin()
     finally:
         node.destroy_node()
         rclpy.shutdown()
