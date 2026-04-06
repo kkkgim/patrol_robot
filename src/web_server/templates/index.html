@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Patrol Robot Control</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Rajdhani',sans-serif;background:#0d1117;height:100vh;display:flex;overflow:hidden}
+
+  /* ── SIDEBAR ── */
+  .sidebar{width:320px;background:#0d1117;border-right:1px solid #21262d;padding:20px;display:flex;flex-direction:column;gap:16px;overflow-y:auto}
+  .title{font-size:18px;font-weight:700;color:#58a6ff;letter-spacing:2px;display:flex;align-items:center;gap:8px}
+  .title-dot{width:8px;height:8px;border-radius:50%;background:#58a6ff;animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(88,166,255,.4)}50%{opacity:.7;box-shadow:0 0 0 6px rgba(88,166,255,0)}}
+
+  .status-box{background:#161b22;border:1px solid #21262d;border-radius:10px;padding:16px;text-align:center}
+  .status-label{font-size:15px;color:#8b949e;letter-spacing:2px;margin-bottom:5px}
+  .status-value{font-size:24px;font-weight:700;font-family:'JetBrains Mono',monospace;color:#58a6ff}
+  .conn{font-size:14px;margin-top:8px;color:#8b949e;display:flex;align-items:center;justify-content:center;gap:6px}
+  .dot{width:7px;height:7px;border-radius:50%;background:#f85149}
+  .connected .dot{background:#3fb950}
+
+  /* ── 운영시간 카드 (핵심) ── */
+  .time-card{background:#161b22;border:1px solid #21262d;border-radius:12px;overflow:hidden}
+  .time-card-header{background:#1c2128;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #21262d}
+  .time-card-title{font-size:13px;font-weight:700;color:#8b949e;letter-spacing:2px}
+  .status-badge{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:1px}
+  .status-badge.active{background:rgba(63,185,80,.15);color:#3fb950;border:1px solid rgba(63,185,80,.3)}
+  .status-badge.inactive{background:rgba(248,81,73,.15);color:#f85149;border:1px solid rgba(248,81,73,.3)}
+
+  .time-body{padding:18px}
+
+  /* 현재 운영시간 표시 */
+  .schedule-box{background:#0d1117;border:1px solid #30363d;border-radius:10px;padding:16px;margin-top:16px;text-align:center}
+  .schedule-label{font-size:14px;color:#8b949e;letter-spacing:2px;margin-bottom:10px}
+  .schedule-time{display:flex;align-items:center;justify-content:center;gap:12px}
+  .schedule-time-block{text-align:center}
+  .time-big{font-size:24px;font-weight:700;font-family:'JetBrains Mono',monospace;color:#e6edf3;line-height:1}
+  .time-tiny-label{font-size:14px;color:#8b949e;margin-bottom:4px;letter-spacing:1px}
+  .schedule-arrow{font-size:20px;color:#30363d;padding:0 4px}
+
+  /* 운영 중인지 아닌지 타이머 */
+  .op-status-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px}
+  .op-status-dot{width:6px;height:6px;border-radius:50%;background:#f85149}
+  .op-status-dot.on{background:#3fb950;animation:pulse 2s infinite}
+  .op-status-text{font-size:11px;color:#8b949e}
+
+  /* 시간 수정 섹션 */
+  .edit-section-label{font-size:15px;color:#8b949e;letter-spacing:2px; margin-bottom:10px}
+
+  .time-picker-row{display:flex;gap:10px;margin-bottom:12px}
+  .time-picker-block{flex:1}
+  .tp-label{font-size:14px;color:#8b949e;letter-spacing:1px;margin-bottom:6px}
+
+  .tp-control{display:flex;align-items:center;background:#0d1117;border:1px solid #30363d;border-radius:8px;overflow:hidden;transition:.2s}
+  .tp-control:focus-within{border-color:#58a6ff;box-shadow:0 0 0 2px rgba(88,166,255,.15)}
+
+  .tp-unit{flex:1;display:flex;flex-direction:column;align-items:center;padding:6px 0;border-right:1px solid #21262d}
+  .tp-unit:last-child{border-right:none}
+
+  .tp-btn{width:50%;background:none;border:none;color:#8b949e;font-size:16px;cursor:pointer;padding:4px 0;line-height:1;transition:.15s;font-family:'Rajdhani',sans-serif}
+  .tp-btn:hover{color:#58a6ff;background:rgba(88,166,255,.08)}
+
+  .tp-val{font-size:20px;font-weight:700;font-family:'JetBrains Mono',monospace;color:#e6edf3;padding:4px 0;min-width:32px;text-align:center;cursor:pointer;user-select:none}
+  .tp-val:hover{color:#58a6ff}
+  .tp-sep{font-size:20px;font-weight:700;color:#30363d;padding:0 2px;align-self:center}
+
+  /* 저장 버튼 */
+  .save-btn{width:100%;padding:12px;background:#238636;border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:700;font-family:'Rajdhani',sans-serif;letter-spacing:1px;cursor:pointer;transition:.2s;display:flex;align-items:center;justify-content:center;gap:8px}
+  .save-btn:hover{background:#2ea043;box-shadow:0 0 12px rgba(35,134,54,.4)}
+  .save-btn:active{transform:scale(.98)}
+  .save-btn.saving{background:#1c2128;color:#8b949e;cursor:not-allowed}
+
+  /* 자동순찰 토글 */
+  .toggle-row{display:flex;justify-content:space-between;align-items:center;background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:12px 14px;margin-bottom:16px}
+  .toggle-info{display:flex;flex-direction:column;gap:2px}
+  .toggle-name{font-size:15px;font-weight:600;color:#e6edf3}
+  .toggle-desc{font-size:13px;color:#8b949e}
+  .toggle-switch{position:relative;width:44px;height:24px;background:#30363d;border-radius:12px;cursor:pointer;transition:.3s;flex-shrink:0}
+  .toggle-switch.on{background:#238636}
+  .toggle-knob{position:absolute;top:3px;left:3px;width:18px;height:18px;background:#e6edf3;border-radius:50%;transition:.3s;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+  .toggle-switch.on .toggle-knob{left:23px}
+
+  /* 위치 */
+  .pos-card{background:#161b22;border:1px solid #21262d;border-radius:10px;padding:14px}
+  .pos-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+  .pos-item{background:#0d1117;border-radius:6px;padding:8px;text-align:center}
+  .pos-key{font-size:12px;color:#8b949e;letter-spacing:1px}
+  .pos-val{font-size:16px;font-weight:700;font-family:'JetBrains Mono',monospace;color:#58a6ff;margin-top:2px}
+
+  /* ── MAIN ── */
+  .main{flex:1;display:flex;flex-direction:column;padding:20px;gap:12px;min-width:0}
+  .map-header{display:flex;justify-content:space-between;align-items:center}
+  .map-controls{display:flex;gap:6px;align-items:center}
+  .rotate-btn{padding:7px 12px;border:1px solid #30363d;border-radius:6px;background:#161b22;color:#8b949e;font-size:12px;cursor:pointer;font-weight:600;transition:.2s;font-family:'Rajdhani',sans-serif;letter-spacing:.5px}
+  .rotate-btn:hover{border-color:#58a6ff;color:#58a6ff}
+  .reset-btn{border-color:#f85149;color:#f85149}
+  .reset-btn:hover{background:rgba(248,81,73,.1)}
+  .rotation-display{font-size:12px;color:#8b949e;min-width:40px;text-align:center;font-family:'JetBrains Mono',monospace}
+
+  .map{flex:1;background:#161b22;border-radius:12px;border:1px solid #21262d;position:relative;overflow:hidden}
+  #mapCanvas{width:100%;height:100%;object-fit:contain}
+  .map-placeholder{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#484f58;font-size:13px;font-family:'JetBrains Mono',monospace}
+
+  /* ── PANEL ── */
+  .panel{width:300px;padding:20px 20px 20px 0;display:flex;flex-direction:column;gap:14px;overflow-y:auto}
+  .card{background:#161b22;border-radius:12px;padding:16px;border:1px solid #21262d}
+  .section{font-size:15px;font-weight:700;letter-spacing:2px;margin-bottom:12px;color:#8b949e}
+
+  .btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .ctrl-btn{padding:14px;border:1px solid transparent;border-radius:8px;color:#fff;font-weight:700;cursor:pointer;transition:.2s;font-family:'Rajdhani',sans-serif;font-size:14px;letter-spacing:.5px}
+  .ctrl-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.4)}
+  .ctrl-btn:disabled{opacity:.25;cursor:not-allowed}
+  .start{background:#238636;border-color:#2ea043}
+  .start:hover:not(:disabled){background:#2ea043}
+  .home{background:#1f6feb;border-color:#388bfd}
+  .home:hover:not(:disabled){background:#388bfd}
+  .stop{background:#da3633;border-color:#f85149;grid-column:span 2}
+  .stop:hover:not(:disabled){background:#f85149}
+
+  .control-hint{margin-top:8px;font-size:11px;color:#8b949e;text-align:center}
+
+  .log{background:#0d1117;color:#3fb950;font-family:'JetBrains Mono',monospace;font-size:11px;height:220px;overflow-y:auto;padding:10px;border-radius:8px;border:1px solid #21262d}
+  .log::-webkit-scrollbar{width:4px}
+  .log::-webkit-scrollbar-track{background:#0d1117}
+  .log::-webkit-scrollbar-thumb{background:#30363d;border-radius:2px}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="title">
+    <div class="title-dot"></div>
+    PATROL ROS2
+  </div>
+  <div id="simTime" class="status-label">TIME: --:--:--</div>
+  <div class="status-box" id="connWrap">
+    
+    <div class="status-label">ROBOT STATUS</div>
+    <div class="status-value" id="robotStatus">UNKNOWN</div>
+    <div class="conn"><span class="dot"></span><span id="connText">DISCONNECTED</span></div>
+  </div>
+
+  <!-- 운영시간 카드 -->
+  <div class="time-card">
+    <div class="time-card-header">
+      <div class="time-card-title">OPERATION SCHEDULE</div>
+      <div class="status-badge inactive" id="opActiveBadge">INACTIVE</div>
+    </div>
+
+    <div class="time-body">
+
+      <!-- 자동순찰 토글 -->
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <div class="toggle-name">Auto Patrol</div>
+          <div class="toggle-desc">자동 순찰 </div>
+        </div>
+        <div class="toggle-switch on" id="toggleSwitch" onclick="toggleAutoPatrol()">
+          <div class="toggle-knob"></div>
+        </div>
+      </div>
+      
+
+      <!-- 현재 스케줄 표시 -->
+      <div class="schedule-box">
+        <div class="schedule-label">CURRENT SCHEDULE</div>
+        <div class="schedule-time">
+          <div class="schedule-time-block">
+            <div class="time-tiny-label">START</div>
+            <div class="time-big" id="dispStart">22:00</div>
+          </div>
+          <div class="schedule-arrow">→</div>
+          <div class="schedule-time-block">
+            <div class="time-tiny-label">END</div>
+            <div class="time-big" id="dispEnd">06:00</div>
+            
+          </div>
+        </div>
+        <div class="op-status-row">
+          <div class="op-status-dot" id="opDot"></div>
+          <div class="op-status-text" id="opStatusText">운영 시간 외</div>
+        </div>
+      </div>
+
+      <!-- 시간 수정 -->
+      <div class="schedule-box">
+        <div class="edit-section-label">EDIT SCHEDULE</div>
+
+          <div class="time-picker-row">
+            <!-- 시작 시간 피커 -->
+            <div class="time-picker-block">
+              <div class="tp-label">START</div>
+              <div class="tp-control">
+              <div class="tp-unit">
+                <button class="tp-btn" onclick="adjustTime('startH',1)">▲</button>
+                <div class="tp-val" id="startH" onclick="editVal('startH')">22</div>
+                <button class="tp-btn" onclick="adjustTime('startH',-1)">▼</button>
+              </div>
+              <div class="tp-sep">:</div>
+              <div class="tp-unit">
+                <button class="tp-btn" onclick="adjustTime('startM',1)">▲</button>
+                <div class="tp-val" id="startM" onclick="editVal('startM')">00</div>
+                <button class="tp-btn" onclick="adjustTime('startM',-1)">▼</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 종료 시간 피커 -->
+          <div class="time-picker-block">
+            <div class="tp-label">END</div>
+            <div class="tp-control">
+              <div class="tp-unit">
+                <button class="tp-btn" onclick="adjustTime('endH',1)">▲</button>
+                <div class="tp-val" id="endH" onclick="editVal('endH')">06</div>
+                <button class="tp-btn" onclick="adjustTime('endH',-1)">▼</button>
+              </div>
+              <div class="tp-sep">:</div>
+              <div class="tp-unit">
+                <button class="tp-btn" onclick="adjustTime('endM',1)">▲</button>
+                <div class="tp-val" id="endM" onclick="editVal('endM')">00</div>
+                <button class="tp-btn" onclick="adjustTime('endM',-1)">▼</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button class="save-btn" id="saveBtn" onclick="saveOperationTime()">
+          <span id="saveBtnText">💾 SAVE SCHEDULE</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 위치 -->
+  <div class="pos-card">
+    <div class="section">ROBOT POSITION</div>
+    <div class="pos-grid">
+      <div class="pos-item"><div class="pos-key">X (m)</div><div class="pos-val" id="posX">0.00</div></div>
+      <div class="pos-item"><div class="pos-key">Y (m)</div><div class="pos-val" id="posY">0.00</div></div>
+      <div class="pos-item"><div class="pos-key">θ (rad)</div><div class="pos-val" id="posTheta">0.00</div></div>
+    </div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="map-header">
+    <div class="section" style="margin-bottom:0">LIVE NAVIGATION MAP</div>
+    <div class="map-controls">
+      <button class="rotate-btn" onclick="rotateMap(-90)">↺ 90°</button>
+      <button class="rotate-btn" onclick="rotateMap(90)">↻ 90°</button>
+      <div class="rotation-display" id="rotationDisplay">0°</div>
+      <button class="rotate-btn reset-btn" onclick="resetMapRotation()">Reset</button>
+    </div>
+  </div>
+  <div class="map">
+    <canvas id="mapCanvas"></canvas>
+    <div class="map-placeholder" id="mapPlaceholder">// waiting for map data...</div>
+  </div>
+</main>
+
+<section class="panel">
+  <div class="card">
+    <div class="section">MANUAL CONTROL</div>
+    <div class="btns">
+      <button class="ctrl-btn start" id="btnStart" onclick="sendCommand('START_PATROL')" disabled>▶ START</button>
+      <button class="ctrl-btn home"  id="btnHome"  onclick="sendCommand('RETURN_HOME')"  disabled>⌂ HOME</button>
+      <button class="ctrl-btn stop"  id="btnStop"  onclick="sendCommand('STOP')"          disabled>■ STOP</button>
+    </div>
+    <div class="control-hint" id="controlHint">⚠ AUTO mode — manual disabled</div>
+  </div>
+
+  <div class="card">
+    <div class="section">SYSTEM LOG</div>
+    <div class="log" id="log"></div>
+  </div>
+</section>
+
+<script>
+let ws=null, reconnectTimer=null;
+let mapImg=null, mapMeta=null;
+let robotPose={x:0,y:0,theta:0};
+let mapRotation=0;
+let autoPatrol=true;
+let waypointsList = [];
+let homePoint = null;
+// 피커 상태
+let picker={startH:22,startM:0,endH:6,endM:0};
+let savedSchedule = {startH:22, startM:0, endH:6, endM:0};
+
+// ── 로그 ──
+function log(msg){
+  const el=document.getElementById('log');
+  const t=new Date().toLocaleTimeString();
+  el.innerHTML += `
+    <div>
+      <span style="color:#484f58">[${t}]</span> ${msg}
+    </div>
+    `;
+  el.scrollTop=el.scrollHeight;
+}
+
+// ── 연결 상태 ──
+function setConnection(connected){
+  const wrap=document.getElementById('connWrap');
+  document.getElementById('connText').textContent=connected?'CONNECTED':'DISCONNECTED';
+  connected?wrap.classList.add('connected'):wrap.classList.remove('connected');
+}
+
+// ── 로봇 상태 ──
+function updateStatus(status){
+  const el=document.getElementById('robotStatus');
+  el.textContent=status;
+  const colors={IDLE:'#8b949e',PATROL_STARTED:'#3fb950',RETURN_HOME:'#58a6ff',STOPPED:'#f85149',COMPLETED:'#3fb950',FAILED:'#f85149',CANCELLED:'#d29922'};
+  el.style.color=colors[status]||'#58a6ff';
+}
+
+// ── 위치 ──
+function updatePose(pose){
+  robotPose=pose;
+  document.getElementById('posX').textContent=pose.x.toFixed(2);
+  document.getElementById('posY').textContent=pose.y.toFixed(2);
+  document.getElementById('posTheta').textContent=pose.theta.toFixed(2);
+  drawMap();
+}
+
+// ── 지도 ──
+function loadMap(data){
+  mapMeta=data;
+  mapImg=new Image();
+  mapImg.onload=()=>{
+    document.getElementById('mapPlaceholder').style.display='none';
+    log(`map loaded: ${data.width}x${data.height}`);
+    drawMap();
+  };
+  mapImg.src=`data:image/png;base64,${data.image}`;
+}
+
+function drawMap(){
+  if(!mapImg||!mapMeta) return;
+
+  const canvas = document.getElementById('mapCanvas');
+  const ctx    = canvas.getContext('2d');
+  const mapW   = mapMeta.width;
+  const mapH   = mapMeta.height;
+
+  // 회전해도 잘리지 않도록 대각선 길이로 캔버스 설정
+  const diagonal = Math.ceil(Math.sqrt(mapW * mapW + mapH * mapH));
+  canvas.width  = diagonal;
+  canvas.height = diagonal;
+
+  const norm = ((mapRotation % 360) + 360) % 360;
+  document.getElementById('rotationDisplay').textContent = norm + '°';
+
+  ctx.save();
+
+  // 캔버스 중심으로 이동 후 회전
+  ctx.translate(diagonal / 2, diagonal / 2);
+  ctx.rotate(mapRotation * Math.PI / 180);
+
+  // 맵 이미지 중앙 정렬
+  ctx.drawImage(mapImg, -mapW / 2, -mapH / 2);
+
+  // ── 웨이포인트 (맵 transform 안, 로봇 transform 밖) ──
+  if(waypointsList.length > 0){
+    waypointsList.forEach((wp, i) => {
+      const wx = (wp.x - mapMeta.origin.x) / mapMeta.resolution;
+      const wy = mapH - (wp.y - mapMeta.origin.y) / mapMeta.resolution;
+      const cx = wx - mapW / 2;
+      const cy = wy - mapH / 2;
+
+      // 다음 포인트로 점선 연결
+      if(i < waypointsList.length - 1){
+        const nx = (waypointsList[i+1].x - mapMeta.origin.x) / mapMeta.resolution - mapW/2;
+        const ny = mapH - (waypointsList[i+1].y - mapMeta.origin.y) / mapMeta.resolution - mapH/2;
+        ctx.strokeStyle = 'rgba(240,165,80,.5)';
+        ctx.lineWidth   = 2;
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(nx, ny);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      // 마지막 → 첫번째 점선 (순환 경로)
+      if(i === waypointsList.length - 1){
+        const fx = (waypointsList[0].x - mapMeta.origin.x) / mapMeta.resolution - mapW/2;
+        const fy = mapH - (waypointsList[0].y - mapMeta.origin.y) / mapMeta.resolution - mapH/2;
+        ctx.strokeStyle = 'rgba(240,165,80,.25)';
+        ctx.lineWidth   = 2;
+        ctx.setLineDash([4, 6]);
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(fx, fy);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      // 웨이포인트 원
+      ctx.fillStyle = '#f0a550';
+      ctx.beginPath();
+      ctx.arc(cx, cy, 10, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 테두리
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth   = 1.5;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 10, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // 번호
+      ctx.fillStyle    = '#000';
+      ctx.font         = 'bold 10px JetBrains Mono, monospace';
+      ctx.textAlign    = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(i + 1, cx, cy);
+    });
+  }
+
+  // ── 홈포인트 ──
+  if(homePoint){
+    const hx = (homePoint.x - mapMeta.origin.x) / mapMeta.resolution - mapW/2;
+    const hy = mapH - (homePoint.y - mapMeta.origin.y) / mapMeta.resolution - mapH/2;
+
+    // 외곽 원 (초록)
+    ctx.fillStyle   = 'rgba(63,185,80,.25)';
+    ctx.strokeStyle = '#3fb950';
+    ctx.lineWidth   = 2;
+    ctx.beginPath();
+    ctx.arc(hx, hy, 14, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // 내부 원
+    ctx.fillStyle = '#3fb950';
+    ctx.beginPath();
+    ctx.arc(hx, hy, 7, 0, Math.PI * 2);
+    ctx.fill();
+
+    // H 텍스트
+    ctx.fillStyle    = '#fff';
+    ctx.font         = 'bold 8px JetBrains Mono, monospace';
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('H', hx, hy);
+  }
+  // ── 로봇 ──
+  const px = (robotPose.x - mapMeta.origin.x) / mapMeta.resolution;
+  const py = mapH - (robotPose.y - mapMeta.origin.y) / mapMeta.resolution;
+
+  ctx.save();
+  ctx.translate(px - mapW / 2, py - mapH / 2);
+  ctx.rotate(-robotPose.theta);
+
+  // 로봇 몸체 (파란 원)
+  ctx.fillStyle = '#58a6ff';
+  ctx.beginPath();
+  ctx.arc(0, 0, 8, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 로봇 방향 화살표 (빨간 선)
+  ctx.strokeStyle = '#f85149';
+  ctx.lineWidth   = 3;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(15, 0);
+  ctx.stroke();
+
+  ctx.restore(); // 로봇 transform 복구
+  ctx.restore(); // 맵 transform 복구
+}
+// 맵 회전 (+/- 90도)
+function rotateMap(d){
+  mapRotation += d;
+  drawMap();
+  log(`map rotated ${d > 0 ? '+' : ''}${d}°`);
+}
+
+function resetMapRotation(){mapRotation=0;drawMap();log('map rotation reset')}
+
+// ── 타임 피커 ──
+function pad(n){return String(n).padStart(2,'0')}
+
+function renderPicker(){
+  document.getElementById('startH').textContent=pad(picker.startH);
+  document.getElementById('startM').textContent=pad(picker.startM);
+  document.getElementById('endH').textContent=pad(picker.endH);
+  document.getElementById('endM').textContent=pad(picker.endM);
+}
+
+function adjustTime(field, delta){
+  if(field==='startH'){picker.startH=(picker.startH+delta+24)%24}
+  else if(field==='startM'){picker.startM=(picker.startM+delta+60)%60}
+  else if(field==='endH'){picker.endH=(picker.endH+delta+24)%24}
+  else if(field==='endM'){picker.endM=(picker.endM+delta+60)%60}
+  renderPicker();
+
+}
+
+function editVal(field){
+  const el=document.getElementById(field);
+  const isHour=field==='startH'||field==='endH';
+  const max=isHour?23:59;
+  const input=document.createElement('input');
+  input.type='number';input.min=0;input.max=max;
+  input.value=parseInt(el.textContent);
+  input.style.cssText='width:32px;background:#0d1117;color:#e6edf3;border:none;font-size:22px;font-weight:700;font-family:JetBrains Mono,monospace;text-align:center;outline:none';
+  el.replaceWith(input);
+  input.focus();input.select();
+  function commit(){
+    let v=Math.max(0,Math.min(max,parseInt(input.value)||0));
+    if(field==='startH')picker.startH=v;
+    else if(field==='startM')picker.startM=v;
+    else if(field==='endH')picker.endH=v;
+    else if(field==='endM')picker.endM=v;
+    renderPicker();
+  }
+  input.addEventListener('blur',commit);
+  input.addEventListener('keydown',e=>{if(e.key==='Enter')input.blur()});
+}
+
+// ── 운영 중 여부 체크 ──
+function checkOpStatus(simTimeStr){
+  if(!simTimeStr) return;
+  const parts    = simTimeStr.split(':');
+  const nowMin   = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+
+  const startMin = savedSchedule.startH * 60 + savedSchedule.startM;
+  const endMin   = savedSchedule.endH   * 60 + savedSchedule.endM;
+
+  const active = startMin < endMin
+    ? nowMin >= startMin && nowMin <= endMin
+    : nowMin >= startMin || nowMin <= endMin;
+
+  document.getElementById('opDot').classList.toggle('on', active);
+  document.getElementById('opStatusText').textContent  = active? '운영 시간 내' : '운영 시간 외';
+  document.getElementById('opActiveBadge').textContent = (active&&autoPatrol) ? 'ACTIVE' : 'INACTIVE';
+  document.getElementById('opActiveBadge').className   = `status-badge ${(active&&autoPatrol) ? 'active' : 'inactive'}`;
+}
+
+// ── 운영시간 저장 ──
+async function saveOperationTime(){
+  const btn=document.getElementById('saveBtn');
+  const btnText=document.getElementById('saveBtnText');
+
+  
+  const start=`${pad(picker.startH)}:${pad(picker.startM)}`;
+  const end=`${pad(picker.endH)}:${pad(picker.endM)}`;
+
+  btn.classList.add('saving');
+  btnText.textContent='저장 중...';
+
+  try{
+    const r=await fetch('/api/config',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({operation_start:start,operation_end:end})
+    });
+    const data=await r.json();
+    if(data.success){
+      savedSchedule.startH = picker.startH; savedSchedule.startM = picker.startM;
+      savedSchedule.endH   = picker.endH;   savedSchedule.endM   = picker.endM;
+      document.getElementById('dispStart').textContent = start;
+      document.getElementById('dispEnd').textContent   = end;
+
+      log(`schedule saved: ${start} → ${end}`);
+      btnText.textContent='✓ SAVED';
+      setTimeout(()=>{btnText.textContent='💾 SAVE SCHEDULE'},2000);
+    } else {
+      log(`save failed: ${data.message}`);
+      btnText.textContent='✗ FAILED';
+      setTimeout(()=>{btnText.textContent='💾 SAVE SCHEDULE'},2000);
+    }
+  } catch(e){
+    log('save error');
+    btnText.textContent='✗ ERROR';
+    setTimeout(()=>{btnText.textContent='💾 SAVE SCHEDULE'},2000);
+  } finally {
+    btn.classList.remove('saving');
+  }
+}
+
+// ── 자동순찰 토글 ──
+async function toggleAutoPatrol(){
+  const newState=!autoPatrol;
+  try{
+    const r=await fetch('/api/config',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({auto_patrol:newState})
+    });
+    const data=await r.json();
+    if(data.success){
+      autoPatrol=newState;
+      updateAutoPatrolUI();
+      log(`auto patrol: ${newState?'enabled':'disabled'}`);
+    } else {log(`toggle failed: ${data.message}`)}
+  } catch(e){log('toggle error')}
+}
+
+function updateAutoPatrolUI(){
+  const sw=document.getElementById('toggleSwitch');
+  const hint=document.getElementById('controlHint');
+  const buttons=[document.getElementById('btnStart'),document.getElementById('btnHome'),document.getElementById('btnStop')];
+  if(autoPatrol){
+    sw.classList.add('on');
+    hint.textContent='⚠ AUTO mode — manual disabled';
+    buttons.forEach(b=>b.disabled=true);
+  } else {
+    sw.classList.remove('on');
+    hint.textContent='Manual control enabled';
+    buttons.forEach(b=>b.disabled=false);
+  }
+}
+
+// ── Config 로드 ──
+function loadConfig(config){
+  if(!config)return;
+  autoPatrol=config.auto_patrol??true;
+  if(config.operation_start){
+    const [h,m]=config.operation_start.split(':').map(Number);
+    picker.startH=h;picker.startM=m;
+    savedSchedule.startH = h; savedSchedule.startM = m; 
+    document.getElementById('dispStart').textContent=config.operation_start;
+  }
+  if(config.operation_end){
+    const [h,m]=config.operation_end.split(':').map(Number);
+    picker.endH=h;picker.endM=m;
+    savedSchedule.endH = h; savedSchedule.endM = m;
+    document.getElementById('dispEnd').textContent=config.operation_end;
+  }
+  log(`config.waypoints: ${config.waypoints}`);
+  if(config.waypoints && config.waypoints.length > 0){
+    waypointsList = config.waypoints;
+    log(`waypoints loaded: ${waypointsList.length}개`);
+  }
+
+  if(config.homepoint){
+    homePoint = config.homepoint;
+    log(`homepoint loaded: (${homePoint.x}, ${homePoint.y})`);
+  }
+
+  renderPicker();
+  updateAutoPatrolUI();
+  drawMap();
+  log(`config loaded: auto=${autoPatrol}`);
+}
+
+// ── WebSocket ──
+function connect(){
+  const proto=location.protocol==='https:'?'wss':'ws';
+  ws=new WebSocket(`${proto}://${location.host}/ws`);
+  ws.onopen=()=>{log('connected');setConnection(true);clearInterval(reconnectTimer)};
+  ws.onmessage=(e)=>{
+    const msg=JSON.parse(e.data);
+    if(msg.type==='status_update'){updateStatus(msg.status);log(msg.status)}
+    else if(msg.type==='map_update'){loadMap(msg.data)}
+    else if(msg.type==='pose_update'){updatePose(msg.pose)}
+    else if(msg.type==='config_update'){loadConfig(msg.config)}
+    else if(msg.type==='sim_time'){
+      document.getElementById('simTime').textContent = `TIME: ${msg.time}`;
+      checkOpStatus(msg.time);
+    }
+  };
+  ws.onclose=()=>{
+    setConnection(false);
+    log('disconnected... reconnecting');
+    reconnectTimer=setInterval(connect,3000);
+  };
+}
+
+// ── 명령 ──
+async function sendCommand(cmd){
+  log(`send: ${cmd}`);
+  try{
+    const r=await fetch(`/api/command/${cmd}`,{method:'POST'});
+    const j=await r.json();
+    log(j.success?`✓ ${cmd} ok`:`✗ fail: ${j.message}`);
+  }catch(e){log('request error')}
+}
+
+// ── 초기 로드 ──
+async function loadInitial(){
+  try{
+    const [statusRes, configRes] = await Promise.all([
+      fetch('/api/status'),
+      fetch('/api/config') 
+    ]);
+    const data   = await statusRes.json();
+    const config = await configRes.json();
+
+    updateStatus(data.status);
+    if(data.map)  loadMap(data.map);
+    if(data.pose) updatePose(data.pose);
+    loadConfig(config);  
+  }catch(e){ log('failed to load initial data'); }
+}
+
+window.onload=()=>{connect();loadInitial();renderPicker();log('ui ready')};
+window.onbeforeunload=()=>{if(ws)ws.close()};
+</script>
+</body>
+</html>
