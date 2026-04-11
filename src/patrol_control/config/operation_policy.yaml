@@ -3,9 +3,7 @@ control_node:
     auto_patrol: false
     operation_end: 08:30
     operation_start: '22:00'
-homepoint:
-- - 0.0
-  - -3.5
+
 waypoints:
 - - 5.5
   - 0.0
@@ -15,3 +13,7 @@ waypoints:
   - 0.0
 - - -3.0
   - -3.0
+  
+homepoint:
+- - 0.0
+  - -3.5
