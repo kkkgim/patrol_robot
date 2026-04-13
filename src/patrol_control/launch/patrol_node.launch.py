@@ -31,7 +31,7 @@ def generate_launch_description():
 
     # 웹서버 실행 (config 파일 경로 환경변수로 전달)
     web_server = ExecuteProcess(
-        cmd=['python3', '/root/web_server/app.py'],
+        cmd=['python3', '/root/patrol_robot/src/web_server/app.py'],
         additional_env={'CONFIG_PATH': config},
         output='screen'
     )

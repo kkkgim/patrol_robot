@@ -6,6 +6,7 @@ Executor Node - 순찰 로봇 실행 노드
 - 웨이포인트: operation_policy.yaml에서 로드
 - 웨이포인트: /patrol/waypoints 토픽으로 퍼블리시 (웹 시각화)
 """
+
 import rclpy
 import time
 import threading
@@ -99,12 +100,8 @@ class ExecutorNode(Node):
                 return self._default_waypoints()
             waypoints = [self.get_position('map', float(wp[0]), float(wp[1])) for wp in raw]
             
-            raw = data.get('homepoints', [])
-            if not raw:
-                self.get_logger().warn('[Waypoints] config에 없음, 기본값 사용')
-                return self._default_waypoints()
-
             return waypoints
+    
         except FileNotFoundError:
             self.get_logger().warn(f'[Waypoints] 파일 없음: {CONFIG_PATH}')
             return self._default_waypoints()
@@ -116,8 +113,9 @@ class ExecutorNode(Node):
         try:
             with open(CONFIG_PATH, 'r') as f:
                 data = yaml.safe_load(f)
-            raw = data.get('homepoints', [])
+            raw = data.get('homepoint', [])
             if not raw:
+                self.get_logger().warn('[Homepoint] config에 없음, 기본값 사용')
                 return self._default_homepoint()
 
             x, y = raw[0]
