@@ -1,0 +1,15 @@
+{
+    "ROS2.distro": "humble",
+    "python.autoComplete.extraPaths": [
+        "/opt/ros/humble/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages",
+        "/root/patrol_robot/build/patrol_control",
+        "/root/patrol_robot/install/patrol_control/lib/python3.10/site-packages"
+    ],
+    "python.analysis.extraPaths": [
+        "/opt/ros/humble/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages",
+        "/root/patrol_robot/build/patrol_control",
+        "/root/patrol_robot/install/patrol_control/lib/python3.10/site-packages"
+    ]
+}
