@@ -2,7 +2,7 @@
 
 ROS2 Humble + Nav2 + Gazebo 시뮬레이션 환경에서 TurtleBot3를 활용한 자율 순찰 로봇 시스템
 웹 대시보드를 통해 로봇을 실시간 모니터링하고 원격 제어할 수 있습니다.
-
+![web](web.png)
 ---
 
 ## 프로젝트 개요
@@ -18,7 +18,7 @@ ROS2 Humble + Nav2 + Gazebo 시뮬레이션 환경에서 TurtleBot3를 활용한
 ---
 
 ## 대시보드 
-![web](web.png)
+
 ![Image](https://github.com/user-attachments/assets/4bb9e2ce-55f8-4868-b9d5-04e4df911a0f)
 
 ### 주요 기능
