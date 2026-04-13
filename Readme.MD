@@ -19,11 +19,7 @@ ROS2 Humble + Nav2 + Gazebo 시뮬레이션 환경에서 TurtleBot3를 활용한
 
 ## 대시보드 
 ![web](web.png)
-<p align="center">
-  <video src="patrol_demo.webm" width="100%" height="auto" controls autoplay loop muted>
-    시연영상
-  </video>
-</p>
+<video src="patrol_demo.webm" width="100%" controls autoplay muted loop></video>
 
 ### 주요 기능
 - **Live Navigation Map**: 실시간 지도 + waypoint(4개) + 로봇 위치 표시
