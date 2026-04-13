@@ -4,7 +4,7 @@ ROS2 Humble + Nav2 + Gazebo 시뮬레이션 환경에서 TurtleBot3를 활용한
 웹 인터페이스를 통해 로봇을 원격 제어하고, waypoint 기반 자율 순찰 및 홈 복귀 기능을 구현했습니다.
 
 ---
-![web](/root/patrol_robot/web.png)
+![web](web.png)
 ## 프로젝트 개요
 
 | 항목 | 내용 |
