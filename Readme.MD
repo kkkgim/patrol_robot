@@ -54,18 +54,18 @@ ROS2 Humble + Nav2 + Gazebo 시뮬레이션 환경에서 TurtleBot3를 활용한
 
 ### Executor 상태 정의
 # RobotState
-IDLE            : 대기 상태
-START_PATROL    : 순찰 시작
-RETURN_HOME     : 홈 복귀 중
-STOP            : 정지 요청
-CANCELLED       : 취소 완료
-COMPLETED       : 임무 완료
-FAILED          : 주행 실패
+- IDLE            : 대기 상태
+- START_PATROL    : 순찰 시작
+- RETURN_HOME     : 홈 복귀 중
+- STOP            : 정지 요청
+- CANCELLED       : 취소 완료
+- COMPLETED       : 임무 완료
+- FAILED          : 주행 실패
 
 # TaskResult (Nav2 결과)
-SUCCEEDED       : 주행 성공
-FAILED          : 주행 실패
-CANCELLED       : 주행 취소
+- SUCCEEDED       : 주행 성공
+- FAILED          : 주행 실패
+- CANCELLED       : 주행 취소
 ---
 
 ## 파일 구조
