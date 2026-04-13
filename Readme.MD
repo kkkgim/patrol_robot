@@ -24,6 +24,7 @@ ROS2 Humble + Nav2 + Gazebo 시뮬레이션 환경에서 TurtleBot3를 활용한
 - **Live Navigation Map**: 실시간 지도 + waypoint(4개) + 로봇 위치 표시
 - **Robot Status**: 로봇 상태 실시간 모니터링 (IDLE / START_PATROL / RETURN_HOME / STOP / CANCELLED / COMPLETED /FAILED)
 - **Operation Schedule**: 자동 순찰 스케줄 설정 (시작/종료 시간)
+- **Patrol Mode Control**: 자동 순찰 모드 활성화 스위치. 활성화 시 수동 제어부 잠금(Lock) 처리
 - **Manual Control**: START / HOME / STOP 원격 제어
 - **Robot Position**: X, Y, θ 실시간 좌표 표시
 - **System Log**: 실시간 로그 스트리밍
