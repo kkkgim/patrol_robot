@@ -22,7 +22,7 @@ ROS2 Humble + Nav2 + Gazebo 시뮬레이션 환경에서 TurtleBot3를 활용한
 
 ### 주요 기능
 - **Live Navigation Map**: 실시간 지도 + waypoint(4개) + 로봇 위치 표시
-- **Robot Status**: 로봇 상태 실시간 모니터링 (IDLE / NAVIGATING / PATROLLING / RETURNING_HOME / COMPLETED / FAILED)
+- **Robot Status**: 로봇 상태 실시간 모니터링 (IDLE / START_PATROL / RETURN_HOME / STOP / CANCELLED / COMPLETED /FAILED)
 - **Operation Schedule**: 자동 순찰 스케줄 설정 (시작/종료 시간)
 - **Manual Control**: START / HOME / STOP 원격 제어
 - **Robot Position**: X, Y, θ 실시간 좌표 표시
@@ -53,16 +53,19 @@ ROS2 Humble + Nav2 + Gazebo 시뮬레이션 환경에서 TurtleBot3를 활용한
 | **executor_node** | Nav2 Action Client로 목표 좌표 전송 및 네비게이션 실행 |
 
 ### Executor 상태 정의
-
-```
+# RobotState
 IDLE            : 대기 상태
-NAVIGATING      : 목적지로 이동 중
-PATROLLING      : 순찰 루프 수행 중
-RETURNING_HOME  : 복귀 중
-CANCELLING      : 정지/취소 처리 중
+START_PATROL    : 순찰 시작
+RETURN_HOME     : 홈 복귀 중
+STOP            : 정지 요청
+CANCELLED       : 취소 완료
+COMPLETED       : 임무 완료
 FAILED          : 주행 실패
-```
 
+# TaskResult (Nav2 결과)
+SUCCEEDED       : 주행 성공
+FAILED          : 주행 실패
+CANCELLED       : 주행 취소
 ---
 
 ## 파일 구조
